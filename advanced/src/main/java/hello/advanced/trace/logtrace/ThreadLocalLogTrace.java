@@ -5,18 +5,19 @@ import hello.advanced.trace.TraceStatus;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class FieldLogTrace implements LogTrace {
+public class ThreadLocalLogTrace implements LogTrace {
 
     private static final String START_PREFIX = "-->";
     private static final String COMPLETE_PREFIX = "<--";
     private static final String EX_PREFIX = "<X-";
     
-    private TraceId traceIdHolder;  // traceId 동기화, 동시성 이슈 발생
+//    private TraceId traceIdHolder;  // traceId 동기화, 동시성 이슈 발생
+    private ThreadLocal<TraceId> traceIdHolder = new ThreadLocal<>();
 
     @Override
     public TraceStatus begin(String message) {
         syncTraceId();
-        TraceId traceId = traceIdHolder;
+        TraceId traceId = traceIdHolder.get();
         long startTimes = System.currentTimeMillis();
         log.info("[{}] {}{}", traceId.getId(), addSpace(START_PREFIX,
                 traceId.getLevel()), message);
@@ -24,12 +25,13 @@ public class FieldLogTrace implements LogTrace {
     }
 
     private void syncTraceId() {
-        if(traceIdHolder == null) {
+        TraceId traceId = traceIdHolder.get();
+        if(traceId == null) {
             //값이 없다면 새로 만듬
-            traceIdHolder = new TraceId();
+            traceIdHolder.set(new TraceId());
         }else {
             //값이 있다면 레벨 증가
-            traceIdHolder = traceIdHolder.createNextId();
+            traceIdHolder.set(traceId.createNextId());
         }
     }
 
@@ -61,11 +63,12 @@ public class FieldLogTrace implements LogTrace {
     }
 
     private void releaseTraceId() {
+        TraceId traceId = traceIdHolder.get();
         //첫번째 레벨이라면? ( log가 끝난다는 뜻 )
-        if(traceIdHolder.isFirstLevel())
-            traceIdHolder = null;   // destroy
+        if(traceId.isFirstLevel())
+            traceIdHolder.remove();   // destroy
         else
-            traceIdHolder = traceIdHolder.createPreviousId();
+            traceIdHolder.set(traceId.createPreviousId());
     }
 
     private static String addSpace(String prefix, int level) {
