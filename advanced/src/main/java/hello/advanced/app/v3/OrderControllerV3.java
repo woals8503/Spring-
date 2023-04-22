@@ -17,7 +17,7 @@ public class OrderControllerV3 {
     @GetMapping("/v3/request")
     public String request(String itemId) {
 
-        TraceStatus status = null;
+        TraceStatus status = null;  //예외처리때문에 바깥 존재
 
         try {
             status = trace.begin("OrderController.request()");

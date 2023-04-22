@@ -3,8 +3,12 @@ package hello.advanced.trace.logtrace;
 import hello.advanced.trace.TraceId;
 import hello.advanced.trace.TraceStatus;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Primary
+@Component
 public class ThreadLocalLogTrace implements LogTrace {
 
     private static final String START_PREFIX = "-->";
@@ -67,8 +71,10 @@ public class ThreadLocalLogTrace implements LogTrace {
         //첫번째 레벨이라면? ( log가 끝난다는 뜻 )
         if(traceId.isFirstLevel())
             traceIdHolder.remove();   // destroy
-        else
+        else{
             traceIdHolder.set(traceId.createPreviousId());
+        }
+
     }
 
     private static String addSpace(String prefix, int level) {
